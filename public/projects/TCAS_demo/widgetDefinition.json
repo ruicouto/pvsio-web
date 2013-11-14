@@ -1,0 +1,20 @@
+{
+ "widgetMaps": {
+  "Button1379152931443": {
+   "functionText": "speedUPx",
+   "events": [
+    "click"
+   ],
+   "type": "Button",
+   "recallRate": "250"
+  }
+ },
+ "regionDefs": [
+  {
+   "class": "Button1379152931443",
+   "shape": "rect",
+   "coords": "499.5,137,545.5,181",
+   "href": "#"
+  }
+ ]
+}

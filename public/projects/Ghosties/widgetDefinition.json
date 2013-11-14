@@ -1,0 +1,36 @@
+{
+ "widgetMaps": [
+  {
+   "events": [
+    "click",
+    "press/release"
+   ],
+   "id": "button_a86f70ec-775a-4bd3-8972-1586cb9066de",
+   "type": "button",
+   "recallRate": "250",
+   "functionText": "UP",
+   "boundFunctions": "click_UP, press_UP, release_UP"
+  },
+  {
+   "type": "display",
+   "id": "display_777ec372-9e17-4d06-bb4f-47874cc57784",
+   "regex": "display:=([0-9/.]+)",
+   "predefinedRegex": "[0-9/.]+",
+   "prefix": "display"
+  }
+ ],
+ "regionDefs": [
+  {
+   "class": "button_a86f70ec-775a-4bd3-8972-1586cb9066de",
+   "shape": "rect",
+   "coords": "179,165,233,202",
+   "href": "#"
+  },
+  {
+   "class": "display_777ec372-9e17-4d06-bb4f-47874cc57784",
+   "shape": "rect",
+   "coords": "197,86,409,146",
+   "href": null
+  }
+ ]
+}
