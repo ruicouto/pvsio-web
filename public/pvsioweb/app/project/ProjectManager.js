@@ -321,5 +321,31 @@ define(function (require, exports, module) {
 
 
 	module.exports = ProjectManager;
-
+//    module.exports = {
+	//
+	//        /** Display new file form to allow user to open a file, it makes use of 'open_file_form_aux'  */
+	//        open_file_form: open_file_form,
+	//
+	//        /** Create a new file and add it in the project passed as parameter.The New file will be shown in file list box.  */
+	//        new_file: new_file,
+	//
+	//        /** Prompt user to get a new name for the selected file                                                           */
+	//        renameFileProject: renameFileProject,
+	//
+	//        renderSourceFileList: renderSourceFileList,
+	//
+	//        /** Remove user's selected file from file list box (not from the project itself )                          */
+	//        closeFile: closeFile,
+	//
+	//        /** Shows in the Editor the content of the file passed as a parameter, if it is undefined mainPVSFile will be used,
+	//                else last file of the project                                                  */
+	//        showContentFileInEditor: showContentFileInEditor,
+	//
+	//        /** Delete a file from the project                                           */
+	//        deleteFile: deleteFile,
+	//
+	//        /** Shows all files in the project in file list view                                   */
+	//        showAllFiles: showAllFiles
+	//
+	//    };
 });
