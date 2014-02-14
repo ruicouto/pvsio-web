@@ -301,7 +301,7 @@ function changeStateName(oldName, newName)
 {
     writer.getLockOnEditor();
     
-	var objectSearch = { wholeWord: true, caseSensitive : true, range: null }; 
+	var objectSearch = { wholeWord: true, caseSensitive : true, range: null, regExp: false }; 
 
 	writer.editor.find(oldName, objectSearch);
 	writer.editor.replaceAll(newName);
@@ -358,13 +358,30 @@ function deleteCondition(nameTrans, sourceName, targetName)
     writer.leaveLockOnEditor();   
 
 }
+function deleteSwitchCond(nameTrans, sourceName, targetName, cond)
+{
+    writer.getLockOnEditor();
+    writer.deleteSwitchCond(nameTrans, sourceName, targetName, cond);
+    writer.leaveLockOnEditor();
+}
 function deleteTrans(nameTrans )
 {
     writer.getLockOnEditor();
     writer.deleteTransition(nameTrans);
     writer.leaveLockOnEditor(); 
 }
-
+function deleteOperation(nameTrans, sourceName, targetName, operation)
+{
+    writer.getLockOnEditor();
+    writer.deleteOperation(nameTrans, sourceName, targetName, operation);
+    writer.leaveLockOnEditor();
+}
+function deleteDefTrans()
+{
+    writer.getLockOnEditor();
+    writer.deleteDefTrans();
+    writer.leaveLockOnEditor();
+}
 function undo() { writer.editor.undo(); }
 
 function redo() { writer.editor.redo(); }
@@ -671,6 +688,15 @@ function WriterOnContent( editor)
 		// else
 		return "";
     }
+    this.deleteDefTrans = function()
+    {
+        var oldContent = this.getContentBetweenTags(this.tagInitStateStart, this.tagInitStateEnd, true);
+        var newContent = "  initial_state: State\n";
+        var objectSearch = { wrap: true, range: null, regExp: false };
+        this.editor.find(oldContent, objectSearch);
+        this.editor.replace(newContent);
+
+    }
     this.findRealTagCond = function(nameTrans, sourceName, targetName)
     {
         var arrayTag = this.buildTagCond(nameTrans, sourceName, targetName);
@@ -687,6 +713,28 @@ function WriterOnContent( editor)
 
             });
         return arrayTagToReturn;
+    }
+    this.deleteSwitchCond = function(nameTrans, sourceName, targetName, cond)
+    {
+        var arrayTag = this.findRealTagCond(nameTrans, sourceName, targetName);
+        arrayTag[0] = arrayTag[0].replace(/(\r\n|\n|\r)/gm, "");
+        arrayTag[1] = arrayTag[1].replace(/(\r\n|\n|\r)/gm, "");
+        var content = this.getContentBetweenTags(arrayTag[0], arrayTag[1]);
+        var rangeContent = this.getRange(arrayTag[0], arrayTag[1], false);
+        var arrayConditions = this.deleteSwitchCondInTag(arrayTag, cond);
+        if( arrayConditions === null ) { console.log("error in deleteSwitchCond"); return; }
+        var invariateContent = content.substring(content.indexOf('->'));
+        var newContent = "   st`current_state = " + sourceName + "\n   ";
+        arrayConditions.forEach(function ( condition)
+            {
+                newContent = newContent + "& st'" + condition + "\n   ";
+
+            });
+        newContent = newContent + invariateContent;
+        var objectSearch = { wrap: true, range: rangeContent, wholeWord: false, regExp: false };
+        this.editor.find(content, objectSearch);
+        this.editor.replace(newContent);
+
     }
     this.addSwitchCond = function(nameTrans, sourceName, targetName, cond)
     {
@@ -711,6 +759,112 @@ function WriterOnContent( editor)
 
         this.addSwitchCondInTag(arrayTagCopy, cond); 
         
+    }
+    this.deleteOperationInTag = function(arrayTag, operation)
+    {
+        var arrayToReturn = null;
+        arrayTag.forEach(function( currentTag )
+        {
+            var currentTagJson = currentTag.substring(currentTag.indexOf('{'));
+            var actualObject;
+            var newTag;
+            var tmpObject = {};   
+            var isEmpty = false;       
+            try {
+                actualObject = JSON.parse(currentTagJson); //Getting Object
+                var operationField = actualObject[writer.transActTag]; //Getting operation field
+                if( ! operationField ) //If does not exist, just return
+                    return null;
+                /* delete operation */
+                var counter = 0;
+                var removeIndex = 0;
+                operationField.forEach(function( item ) 
+                    {
+                        if( item === operation )
+                            removeIndex = counter;
+                        counter ++;    
+                    });
+                operationField.splice(removeIndex, 1);
+                if( operationField.length > 0) { tmpObject[writer.transActTag] = operationField; } 
+                else { isEmpty = true;}
+                newTag = JSON.stringify(tmpObject); //We cannot stringify actualObject to preserve spaces 
+                arrayToReturn = operationField;
+            }
+            catch( err)
+            {
+                console.log("Error in deleteSwitchCondInTag \n" + err);
+                alert("Error in deleteSwitchCondInTag \n" + err);
+                return null;
+            }
+
+            newTag = newTag.replace('{', "").replace('}', ""); //Stringify add brackets we do not need them
+            var oldCondField = currentTag.substring(currentTag.indexOf(writer.transActTag));
+            oldCondField = oldCondField.substring(0, oldCondField.indexOf(']') + 1);
+            newTag = newTag.replace("\"", ""); //delete initial " created by stringify
+            if( isEmpty)
+            {
+                oldCondField = ", \"" + oldCondField;
+            }
+            newTag = currentTag.replace(oldCondField, newTag);
+            var objectSearch = { wrap: true, range: null, wholeWord: false, regExp: false };
+            writer.editor.find(currentTag, objectSearch);
+            writer.editor.replace(newTag);     
+
+        }); //End Loop
+        return arrayToReturn;
+    }
+    this.deleteSwitchCondInTag = function(arrayTag, cond)
+    {
+        var arrayToReturn = null;
+        arrayTag.forEach(function( currentTag )
+        {
+            var currentTagJson = currentTag.substring(currentTag.indexOf('{'));
+            var actualObject;
+            var newTag;
+            var tmpObject = {};   
+            var isEmpty = false;       
+            try {
+                actualObject = JSON.parse(currentTagJson); //Getting Object
+                var switchCond = actualObject[writer.switchCondTag]; //Getting conditions field
+                if( ! switchCond ) //If does not exist, just return
+                    return null;
+                /* delete condition */
+                var counter = 0;
+                var removeIndex = 0;
+                switchCond.forEach(function( item ) 
+                    {
+                        if( item === cond )
+                            removeIndex = counter;
+                        counter ++;    
+                    });
+                switchCond.splice(removeIndex, 1);
+                if( switchCond.length > 0) { tmpObject[writer.switchCondTag] = switchCond; } 
+                else { isEmpty = true;}
+                newTag = JSON.stringify(tmpObject); //We cannot stringify actualObject to preserve spaces 
+                arrayToReturn = switchCond;
+            }
+            catch( err)
+            {
+                console.log("Error in deleteSwitchCondInTag \n" + err);
+                alert("Error in deleteSwitchCondInTag \n" + err);
+                return null;
+            }
+
+            newTag = newTag.replace('{', "").replace('}', ""); //Stringify add brackets we do not need them
+            var oldCondField = currentTag.substring(currentTag.indexOf(writer.switchCondTag));
+            oldCondField = oldCondField.substring(0, oldCondField.indexOf(']') + 1);
+            newTag = newTag.replace("\"", ""); //delete initial " created by stringify
+            if( isEmpty)
+            {
+                oldCondField = ", \"" + oldCondField;
+            }
+            newTag = currentTag.replace(oldCondField, newTag);
+            var objectSearch = { wrap: true, range: null, wholeWord: false, regExp: false };
+            writer.editor.find(currentTag, objectSearch);
+            writer.editor.replace(newTag);     
+
+        }); //End Loop
+        return arrayToReturn;
     }
     this.addSwitchCondInTag = function(arrayTag, cond)
     {  
@@ -1268,10 +1422,11 @@ function WriterOnContent( editor)
         }
         return -1;
     }
-    this.getRange = function(start, end)
+    this.getRange = function(start, end, isRegexp)
     {
+        if( isRegexp === undefined) { isRegexp = true;}
         var range = editor.getSelectionRange();
-        var objectSearch = { wrap: true, range: null, regExp: true }; 
+        var objectSearch = { wrap: true, range: null, regExp: isRegexp }; 
         
         var initSearch = editor.find(start, objectSearch);
         var endSearch  = editor.find(end, objectSearch);
@@ -1351,11 +1506,32 @@ function WriterOnContent( editor)
         var stateList = this.deleteStateInPerTag(arrayTag, sourceName);
         this.modifyStatesInPerFunction(oldContent, stateList);
     }
+    this.deleteOperation = function(nameTrans, sourceName, targetName, operation)
+    {
+        var arrayTag = this.findRealTagCond(nameTrans, sourceName, targetName);
+        arrayTag[0] = arrayTag[0].replace(/(\r\n|\n|\r)/gm, "");
+        arrayTag[1] = arrayTag[1].replace(/(\r\n|\n|\r)/gm, "");
+        var content = this.getContentBetweenTags(arrayTag[0], arrayTag[1]);
+        var rangeContent = this.getRange(arrayTag[0], arrayTag[1], false);
+        var arrayOperations = this.deleteOperationInTag(arrayTag, operation);
+        if( arrayOperations === null ) { console.log("error in deleteOperation"); return; }
+        var invariateContent = content.substring(0, content.indexOf('->'));
+        var newContent = "  LET new_st = leave_state(" + sourceName + ")(st)" + "\n   ";
+        arrayOperations.forEach(function ( operation)
+            {
+                newContent = newContent + "   ,  new_st = new_st WITH [ " + operation + "]\n";
+
+            });
+        newContent = invariateContent + newContent + "     IN enter_into(" + targetName +")(new_st)\n" ;
+        var objectSearch = { wrap: true, range: rangeContent, wholeWord: false, regExp: false };
+        this.editor.find(content, objectSearch);
+        this.editor.replace(newContent);
+    }
     this.deleteTransition = function(nameFun) 
     {       
         var tagFun = this.buildTagFunction(nameFun);
-        var tagPerFun = this.buildTagPerFunction(nameFun);
-        var rangePerFunction = this.getRange(tagPerFun[0], tagPerFun[1]);
+        var tagPerFun = this.findRealTagPer(nameFun);
+        var rangePerFunction = this.getRange(tagPerFun[0], tagPerFun[1], false);
 
         /* Clearing selection in the editor */
         this.editor.selection.clearSelection();
@@ -1417,7 +1593,10 @@ module.exports = {
         deleteCondition : deleteCondition,
         deleteNode : removeState,
         deleteTrans: deleteTrans,
-        addDefaultTransition : addDefaultTransition
+        addDefaultTransition : addDefaultTransition,
+        deleteSwitchCond : deleteSwitchCond,
+        deleteOperation : deleteOperation,
+        deleteDefTrans : deleteDefTrans
 
 };
 

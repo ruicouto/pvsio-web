@@ -662,7 +662,7 @@ ul#context-menu li {
 }
 /* menu header */
 .condition-title:before {
-    content: "Choose action to modify";
+    content: "Choose condition to modify";
     display: block;
     position: absolute;
     top: 0;
@@ -676,5 +676,60 @@ ul#context-menu li {
     font-weight: bold;
 }
 .condition-title :first-child {
+    margin-top: 32px;
+}
+
+/* menu header */
+.conditionR-title:before {
+    content: "Choose condition to delete";
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    background: #DDD;
+    padding: 2px;
+    
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 11px;
+    font-weight: bold;
+}
+.conditionR-title :first-child {
+    margin-top: 32px;
+}
+/* menu header */
+.operation-title:before {
+    content: "Choose operation to modify";
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    background: #DDD;
+    padding: 2px;
+    
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 11px;
+    font-weight: bold;
+}
+.operation-title :first-child {
+    margin-top: 32px;
+}
+/* menu header */
+.operationR-title:before {
+    content: "Choose operation to remove";
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    background: #DDD;
+    padding: 2px;
+    
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 11px;
+    font-weight: bold;
+}
+.operationR-title :first-child {
     margin-top: 32px;
 }

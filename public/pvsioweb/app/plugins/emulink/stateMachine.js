@@ -50,6 +50,8 @@ function NodeAndEdgeHandler()
 {
 	this.nodeIDGenerator = 0;
 	this.edgeIDGenerator = 0;
+    this.defTrans = null;
+    this.defTransFalseNodeId = null;
 
 }
 NodeAndEdgeHandler.prototype.newNodeID = function () { return nodeAndEdgeHandler.nodeIDGenerator++; };
@@ -144,8 +146,10 @@ NodeAndEdgeHandler.prototype.deleteNodeAndTransition = function(node, flagObject
     			if( key.source.id === node.id || key.target.id === node.id )
     			{	
     				nodeAndEdgeHandler.delete_edge(key.id); //Delete from SVG 
-    				pvsWriter.deleteCondition(key.name, key.source.name, key.target.name);
-    				toDelete[key.name] = key.name;
+                    if( ! key.source.falseNode  )
+    				{   pvsWriter.deleteCondition(key.name, key.source.name, key.target.name);
+    				    toDelete[key.name] = key.name;
+                    }
     			}
     		});
     }
@@ -156,8 +160,10 @@ NodeAndEdgeHandler.prototype.deleteNodeAndTransition = function(node, flagObject
     			if( key.source.id === node.id )
     			{	
     				nodeAndEdgeHandler.delete_edge(key.id); //Delete from SVG 
-    				pvsWriter.deleteCondition(key.name, key.source.name, key.target.name)
-    				toDelete[key.name] = key.name;    				
+                    if( ! key.source.falseNode )
+    				{   pvsWriter.deleteCondition(key.name, key.source.name, key.target.name)
+    				    toDelete[key.name] = key.name;
+                    }    				
     			}
     		});
 
@@ -169,8 +175,10 @@ NodeAndEdgeHandler.prototype.deleteNodeAndTransition = function(node, flagObject
     			if( key.target.id === node.id )
     			{	
     			    nodeAndEdgeHandler.delete_edge(key.id); //Delete from SVG 
-    				pvsWriter.deleteCondition(key.name, key.source.name, key.target.name)
-    				toDelete[key.name] = key.name;
+                    if( ! key.source.falseNode )
+    				{   pvsWriter.deleteCondition(key.name, key.source.name, key.target.name)
+    				    toDelete[key.name] = key.name;
+                    }
     			}
     		});
     }
@@ -184,6 +192,13 @@ NodeAndEdgeHandler.prototype.deleteNodeAndTransition = function(node, flagObject
     		});
     	 if( flagDelete) {pvsWriter.deleteTrans(nameEdge); }	
 	}
+    if( node.id === nodeAndEdgeHandler.defTrans)
+    {
+        nodeAndEdgeHandler.delete_node(nodeAndEdgeHandler.defTransFalseNodeId);
+        pvsWriter.deleteDefTrans();
+        nodeAndEdgeHandler.defTrans = null;
+        nodeAndEdgeHandler.defTransFalseNodeId = null;
+    }
 }
 NodeAndEdgeHandler.prototype.update_node_size = function(id, width, height) 
 {
@@ -661,7 +676,25 @@ var setInteractionEnabledOrDisabledAboutEdge = function(disabled, d)
                });     
             });
         }
+        if( d.source.falseNode)
+        {   buttonClass = [".rmvDefTrans"];
+            buttonClass.forEach(function(button) { 
+                $(button).each(function(index, element) {
+                $(element).prop("disabled",disabled);
+               });     
+            });
+        }
+        
 	}
+    else
+    {
+        buttonClass = [".rmvCond", ".modifyCondition", ".rmvOper", ".modifyOperation"];
+            buttonClass.forEach(function(button) { 
+                $(button).each(function(index, element) {
+                $(element).prop("disabled",disabled);
+               });     
+            });   
+    }
 	
 
 }
@@ -1290,6 +1323,13 @@ var emulink = function() {
 					var falseNode = nodeAndEdgeHandler.add_node(posX, posY, "", true, 20, 20, true);
 					nodeAndEdgeHandler.add_edge(falseNode, d, "", true);
                     pvsWriter.addDefaultTransition(d.name);
+                    nodeAndEdgeHandler.defTrans = d.id;
+                    nodeAndEdgeHandler.defTransFalseNodeId = falseNode.id;
+                    toggle_editor_mode(MODE.DEFAULT);                  
+                    $(".button_default_transition").each(function(index, element) {
+                        $(element).css("border","");
+                    });                 
+
 					restart();
 				}
 				else {
@@ -1487,7 +1527,7 @@ var emulink = function() {
 		restart();
 	  });
     
-    d3.select("#changeNameNode")
+    d3.selectAll(".changeNameNode")
       .on("click", function () {
 			if(selected_nodes.keys().length == 1) {
 				var object = selected_nodes.get(selected_nodes.keys());
@@ -1513,7 +1553,7 @@ var emulink = function() {
 			}
       });
     
-	d3.select("#changeNameEdge")
+	d3.selectAll(".changeNameEdge")
       .on("click", function () {
 			if(selected_edges.keys().length == 1) {
 				var object = selected_edges.get(selected_edges.keys());
@@ -1604,7 +1644,34 @@ var emulink = function() {
              }  
           
       });
-    
+    d3.selectAll(".rmvCond_")
+      .on("click", function() {
+            if( selected_edges.keys().length == 1) {
+                var object = selected_edges.get(selected_edges.keys());
+                nodeAndEdgeHandler.modifyLabelEdgeToDisplayActionAndCond(object, path);
+                restart();
+             }            
+      });
+      d3.selectAll(".rmvOper_")
+      .on("click", function() {
+            if( selected_edges.keys().length == 1) {
+                var object = selected_edges.get(selected_edges.keys());
+                nodeAndEdgeHandler.modifyLabelEdgeToDisplayActionAndCond(object, path);
+                restart();
+             }            
+      });
+    d3.selectAll(".rmvDefTrans")
+      .on("click", function() {
+            if( selected_edges.keys().length == 1) {
+                var object = selected_edges.get(selected_edges.keys());
+                var node = object.source;      
+                nodeAndEdgeHandler.delete_node(node.id); 
+                nodeAndEdgeHandler.delete_edge(object.id);
+                pvsWriter.deleteDefTrans();
+                nodeAndEdgeHandler.defTrans = null;
+                restart();
+             }            
+      });
     d3.selectAll(".addOperation")
 	  .on("click", function () {
 			if(selected_edges.keys().length == 1) {
@@ -1644,8 +1711,21 @@ $(function(){
             itemsToUse["sep1"] = "---------";
             itemsToUse["quit"] = {name: "Quit", icon: "quit"};
             return {
-                callback: function(key, options) 
-                    // Go Ahead Here                     
+                callback: function(key, options) {
+                    if( key === "quit") { return; }
+                    var oldCondition = key;
+                    /* Get new Condition */
+                    pvsWriter.deleteSwitchCond(object.name, object.source.name, object.target.name, oldCondition);
+                    var counter = 0;
+                    var removeIndex = 0;
+                    object.listConditions.forEach(function( item ) 
+                    {
+                        if( item === oldCondition )
+                            removeIndex = counter;
+                        counter ++;    
+                    });
+                    object.listConditions.splice(removeIndex, 1);
+                    $( ".addCondition" ).trigger( "click" );                   
                 },
                 items: itemsToUse,
                 zIndex: 10,
@@ -1662,7 +1742,157 @@ $(function(){
     
 });
     
+    $(function(){
+    $.contextMenu({
+        selector: '.context-menu-deleteCond', 
+        trigger: 'left',
+        className: 'conditionR-title',
+        build: function($trigger, e) {
+            // this callback is executed every time the menu is to be shown
+            // its results are destroyed every time the menu is hidden
+            var object = selected_edges.get(selected_edges.keys());
+            var itemsToUse = {};
+            for( var i = 0; i < object.listConditions.length; i++)
+            {
+                var tmp = {};
+                tmp["name"] = object.listConditions[i];
+                tmp["icon"] = "delete";
+                itemsToUse[object.listConditions[i]] = tmp;
+            }
+            itemsToUse["sep1"] = "---------";
+            itemsToUse["quit"] = {name: "Quit", icon: "quit"};
+            return {
+                callback: function(key, options) {
+                    if( key === "quit") { return; }
+                    var oldCondition = key;
+                    pvsWriter.deleteSwitchCond(object.name, object.source.name, object.target.name, oldCondition);
+                    var counter = 0;
+                    var removeIndex = 0;
+                    object.listConditions.forEach(function( item ) 
+                    {
+                        if( item === oldCondition )
+                            removeIndex = counter;
+                        counter ++;    
+                    });
+                    object.listConditions.splice(removeIndex, 1);
+                    if( object.listConditions.length === 0) {delete object.listConditions;}
+                    $( ".rmvCond_" ).trigger( "click" );
+                                      
+                },
+                items: itemsToUse,
+                zIndex: 10,
+                position: function(opt, x, y) {
+                    opt.$menu.position({
+                    my: 'center top',
+                    at: 'center bottom',
+                    of: opt.$trigger
+                });
+                }
+            }; 
+        }             
+    });
     
+});
+    $(function(){
+    $.contextMenu({
+        selector: '.context-menu-modifyOperation', 
+        trigger: 'left',
+        className: 'operation-title',
+        build: function($trigger, e) {
+            // this callback is executed every time the menu is to be shown
+            // its results are destroyed every time the menu is hidden
+            var object = selected_edges.get(selected_edges.keys());
+            var itemsToUse = {};
+            for( var i = 0; i < object.listOfOperations.length; i++)
+            {
+                var tmp = {};
+                tmp["name"] = object.listOfOperations[i];
+                tmp["icon"] = "edit";
+                itemsToUse[object.listOfOperations[i]] = tmp;
+            }
+            itemsToUse["sep1"] = "---------";
+            itemsToUse["quit"] = {name: "Quit", icon: "quit"};
+            return {
+                callback: function(key, options) {
+                    if( key === "quit") { return; }
+                    var oldOperation = key;
+                    pvsWriter.deleteOperation(object.name, object.source.name, object.target.name, oldOperation);
+                    var counter = 0;
+                    var removeIndex = 0;
+                    object.listOfOperations.forEach(function( item ) 
+                    {
+                        if( item === oldOperation )
+                            removeIndex = counter;
+                        counter ++;    
+                    });
+                    object.listOfOperations.splice(removeIndex, 1);
+                    if( object.listOfOperations.length === 0 ){ delete object.listOfOperations; }
+                    $( ".addOperation" ).trigger( "click" );                   
+                },
+                items: itemsToUse,
+                zIndex: 10,
+                position: function(opt, x, y) {
+                    opt.$menu.position({
+                    my: 'center top',
+                    at: 'center bottom',
+                    of: opt.$trigger
+                });
+                }
+            }; 
+        }             
+    });
+    
+});
+    $(function(){
+    $.contextMenu({
+        selector: '.context-menu-deleteOperation', 
+        trigger: 'left',
+        className: 'operationR-title',
+        build: function($trigger, e) {
+            // this callback is executed every time the menu is to be shown
+            // its results are destroyed every time the menu is hidden
+            var object = selected_edges.get(selected_edges.keys());
+            var itemsToUse = {};
+            for( var i = 0; i < object.listOfOperations.length; i++)
+            {
+                var tmp = {};
+                tmp["name"] = object.listOfOperations[i];
+                tmp["icon"] = "edit";
+                itemsToUse[object.listOfOperations[i]] = tmp;
+            }
+            itemsToUse["sep1"] = "---------";
+            itemsToUse["quit"] = {name: "Quit", icon: "quit"};
+            return {
+                callback: function(key, options) {
+                    if( key === "quit") { return; }
+                    var oldOperation = key;
+                    pvsWriter.deleteOperation(object.name, object.source.name, object.target.name, oldOperation);
+                    var counter = 0;
+                    var removeIndex = 0;
+                    object.listOfOperations.forEach(function( item ) 
+                    {
+                        if( item === oldOperation )
+                            removeIndex = counter;
+                        counter ++;    
+                    });
+                    object.listOfOperations.splice(removeIndex, 1);
+                    if( object.listOfOperations.length === 0) {delete object.listOfOperations;}
+                    $( ".rmvOper_" ).trigger( "click" );                   
+                },
+                items: itemsToUse,
+                zIndex: 10,
+                position: function(opt, x, y) {
+                    opt.$menu.position({
+                    my: 'center top',
+                    at: 'center bottom',
+                    of: opt.$trigger
+                });
+                }
+            }; 
+        }             
+    });
+    
+});
     d3.selectAll(".deleteNode")
       .on("click", function() {
       	  if( selected_nodes.keys().length == 1) {
