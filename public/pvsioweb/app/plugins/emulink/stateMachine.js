@@ -523,7 +523,12 @@ SvgViewHandler.prototype.highlightElements = function ( nodes ) {
 	svg.selectAll("g").selectAll("g").select("rect")
 		.style("fill", function (d) {
 				for(var i = 0; i < nodes.length; i++) {
-					if(nodes[i] == d.name) {
+                    if( i == 0 && nodes[i] == d.name )
+                    {
+                        return "red";
+
+                    }
+					else if(nodes[i] == d.name) {
 						return "white";
 					}
 				}

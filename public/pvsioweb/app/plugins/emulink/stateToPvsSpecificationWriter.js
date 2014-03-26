@@ -1142,7 +1142,7 @@ function WriterOnContent( editor)
     }
 	this.addTransition = function (newTransition)
 	{               
-        var objectSearch = { wholeWord: true, wrap: true, range: null }; 
+        var objectSearch = { wholeWord: false, wrap: true, range: null }; 
         
 		//Before adding a Transition, we need to check if it has been already created	
 		var spaceRegex = "[\\s]*";
@@ -1156,13 +1156,14 @@ function WriterOnContent( editor)
         var secondTag = blockEndNeedle + separatorRegex + idNeedle + separatorRegex + typeEdgeNeedle;
 
 		var ans = this.getContentBetweenTags(firstTag, secondTag, true);
-
+        
 		// If initial Tag is present, transition has been already created -- nothing to do
 		if( ans ) { return; }
 
 		//Transition function has not been already created
 		var end = "END";
 
+        objectSearch = { wholeWord: true, wrap: true, range: null };
 		var endSearch = editor.find(end, objectSearch, true);
 		var content;	
 
@@ -1196,7 +1197,7 @@ function WriterOnContent( editor)
         arrayTag.push(this.createPerTag(this.tagPerStart, nameTrans));
         arrayTag.push(this.createPerTag(this.tagPerEnd, nameTrans));
         var arrayTagToReturn = new Array();
-        var objectSearch = { wrap: true, range: null, wholeWord: false }; 
+        var objectSearch = { wrap: true, range: null, wholeWord: false, regExp: false }; 
 
         arrayTag.forEach(function( currentTag)
             {
