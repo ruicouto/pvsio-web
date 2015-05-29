@@ -26,22 +26,37 @@ define(function (require, exports, module) {
     }
 
     var _this;
+    
+    /**
+     * Callback function when a message is received from the nc websocket
+     * @param event
+     */
+    function onMessageReceived(event) {
+        var res = event;
+        console.log("IVY-ws -- new message received --");
+        console.log(res);
+        _this.fire({type: "ivyMessageReceived", res: res});
+    }
+
 
     IVYClient.prototype.connect = function () {
         return new Promise(function (resolve, reject) {
             _this.ws = new WebSocket(_this.url);
             _this.ws.onopen = function () {
-                _this.fire({type: "WebSocketConnectionOpened", message: "Connected to IVY!"});
+                console.log("IVY-ws connection open");
+                _this.fire({type: "WebSocketConnectionOpened", message: "Connected to IVY!", serverURL: _this.url});
                 resolve();
             };
             _this.ws.onmessage = onMessageReceived;
             _this.ws.onclose = function () {
-                _this.fire({type: "WebSocketConnectionClosed", message: "Disconnected from IVY (" + _this.url + ")"});
+                console.log("IVY-ws connection closed");
+                _this.fire({type: "WebSocketConnectionClosed", message: "Disconnected from IVY (" + _this.url + ")", serverURL: _this.url});
                 _this.ws = null;
                 reject({ code: "CLOSED" });
             };
             _this.ws.onerror = function () {
-                _this.fire({type: "WebSocketConnectionError", message: "Unable to connect to IVY (" + _this.url + ")"});
+                console.log("IVY-ws connection error");
+                _this.fire({type: "WebSocketConnectionError", message: "Unable to connect to IVY (" + _this.url + ")", serverURL: _this.url});
                 _this.ws = null;
                 reject({ code: "ERROR" });
             };
@@ -49,23 +64,13 @@ define(function (require, exports, module) {
     };
 
     IVYClient.prototype.send = function(cmd) {
-        if(_this.ws && _this.ws.OPEN) {
+        if(_this.ws && _this.ws.readyState === _this.ws.OPEN) {
+            _this.fire({type: "WebSocketSend", message: "Sending command over websocket connection", serverURL: _this.url, cmd: cmd});
             _this.ws.send(cmd);
         }
         else{
-            _this.fire({type: "WebSocketConnectionError", message: "Websocket not opened"});
+            _this.fire({type: "WebSocketConnectionError", message: "Websocket not opened", serverURL: _this.url});
         }
-    };
-
-
-    /**
-     * Callback function when a message is received from the nc websocket
-     * @param event
-     */
-    var onMessageReceived = function(event) {
-        var res = event;
-        console.log(res);
-        _this.fire({type: "ivyMessageReceived", res: res});
     };
 
     module.exports = IVYClient;
